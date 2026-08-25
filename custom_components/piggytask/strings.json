@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to PiggyTask",
+        "description": "In the PiggyTask app: Settings → Integrations → Home Assistant → create a token, then paste it below. Choose the \"Counters + check off\" preset (Premium) to also get a to-do list per child.",
+        "data": {
+          "api_token": "API token",
+          "base_url": "Server URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid or revoked API token",
+      "cannot_connect": "Could not connect to PiggyTask",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This family is already connected"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "open_tasks": { "name": "Open tasks" },
+      "overdue_tasks": { "name": "Overdue tasks" },
+      "due_today": { "name": "Due today" }
+    },
+    "todo": {
+      "task_list": { "name": "Tasks" }
+    }
+  }
+}

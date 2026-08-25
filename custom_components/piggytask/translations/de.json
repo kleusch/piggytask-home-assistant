@@ -1,0 +1,32 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit PiggyTask verbinden",
+        "description": "In der PiggyTask-App: Einstellungen → Integrationen → Home Assistant → Token erstellen und unten einfügen. Mit dem Preset „Zähler + Abhaken“ (Premium) gibt es zusätzlich eine To-do-Liste pro Kind.",
+        "data": {
+          "api_token": "API-Token",
+          "base_url": "Server-URL"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ungültiges oder widerrufenes API-Token",
+      "cannot_connect": "Verbindung zu PiggyTask fehlgeschlagen",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "abort": {
+      "already_configured": "Diese Familie ist bereits verbunden"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "open_tasks": { "name": "Offene Aufgaben" },
+      "overdue_tasks": { "name": "Überfällige Aufgaben" },
+      "due_today": { "name": "Heute fällig" }
+    },
+    "todo": {
+      "task_list": { "name": "Aufgaben" }
+    }
+  }
+}
