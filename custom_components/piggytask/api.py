@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass, field
 
 import aiohttp
@@ -75,7 +76,7 @@ class PiggyTaskApiClient:
                         f"Unexpected response {response.status} from PiggyTask"
                     )
                 payload = await response.json()
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise PiggyTaskConnectionError(str(err)) from err
 
         family = payload.get("family") or {}
@@ -112,7 +113,7 @@ class PiggyTaskApiClient:
                         f"Unexpected response {response.status} from PiggyTask"
                     )
                 payload = await response.json()
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise PiggyTaskConnectionError(str(err)) from err
 
         return [
@@ -124,14 +125,6 @@ class PiggyTaskApiClient:
             )
             for task in payload.get("tasks", [])
         ]
-
-    async def async_probe_task_access(self) -> bool:
-        """Return True if this token can list tasks (used to decide whether to add the todo platform)."""
-        try:
-            await self.async_get_tasks()
-        except PiggyTaskApiError:
-            return False
-        return True
 
     async def async_complete_task(self, task_id: str, child_id: str) -> None:
         """Mark a task done. Requires tasks:complete scope."""
@@ -151,5 +144,5 @@ class PiggyTaskApiClient:
                     raise PiggyTaskConnectionError(
                         f"Unexpected response {response.status} from PiggyTask"
                     )
-        except aiohttp.ClientError as err:
+        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise PiggyTaskConnectionError(str(err)) from err

@@ -1,7 +1,7 @@
 """Todo platform for PiggyTask — one to-do list per child, mark-as-done only.
 
 Only set up when the configured token has task read/complete scope (see
-__init__.py's async_probe_task_access call) — a counts-only token never gets here.
+__init__.py's initial tasks fetch) — a counts-only token never gets here.
 """
 
 from __future__ import annotations
@@ -71,11 +71,18 @@ class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskTasksCoordinator], TodoL
         self._child_id = child_id
         self._attr_unique_id = f"{entry.entry_id}_{child_id}_todo"
 
-    def _child_name(self) -> str:
-        child = next(
+    def _child(self):
+        return next(
             (c for c in self._counts_coordinator.data.children if c.id == self._child_id), None
         )
+
+    def _child_name(self) -> str:
+        child = self._child()
         return child.name if child else self._child_id
+
+    @property
+    def available(self) -> bool:
+        return super().available and self._child() is not None
 
     @property
     def todo_items(self) -> list[TodoItem]:
