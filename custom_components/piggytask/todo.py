@@ -15,7 +15,7 @@ from homeassistant.components.todo import (
     TodoListEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -23,7 +23,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import PiggyTaskCoordinator, PiggyTaskTasksCoordinator
-from .entity import child_device_info
+from .entity import child_device_info, child_entity_adder
 
 
 async def async_setup_entry(
@@ -33,23 +33,16 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     counts_coordinator: PiggyTaskCoordinator = data["counts"]
     tasks_coordinator: PiggyTaskTasksCoordinator = data["tasks"]
-    known_child_ids: set[str] = set()
 
-    @callback
-    def _add_new_children() -> None:
-        new_entities: list[PiggyTaskChildTodoList] = []
-        for child in counts_coordinator.data.children:
-            if child.id in known_child_ids:
-                continue
-            known_child_ids.add(child.id)
-            new_entities.append(
-                PiggyTaskChildTodoList(tasks_coordinator, counts_coordinator, entry, child.id)
-            )
-        if new_entities:
-            async_add_entities(new_entities)
-
-    _add_new_children()
-    entry.async_on_unload(counts_coordinator.async_add_listener(_add_new_children))
+    add_new_children = child_entity_adder(
+        counts_coordinator,
+        lambda child_id: [
+            PiggyTaskChildTodoList(tasks_coordinator, counts_coordinator, entry, child_id)
+        ],
+        async_add_entities,
+    )
+    add_new_children()
+    entry.async_on_unload(counts_coordinator.async_add_listener(add_new_children))
 
 
 class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskTasksCoordinator], TodoListEntity):

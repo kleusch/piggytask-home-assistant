@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .api import ChildTaskCounts
 from .const import DOMAIN
 from .coordinator import PiggyTaskCoordinator
-from .entity import child_device_info
+from .entity import child_device_info, child_entity_adder
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -62,24 +62,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up PiggyTask sensors, adding entities as new children appear."""
     coordinator: PiggyTaskCoordinator = hass.data[DOMAIN][entry.entry_id]["counts"]
-    known_child_ids: set[str] = set()
 
-    @callback
-    def _add_new_children() -> None:
-        new_entities: list[PiggyTaskChildSensor] = []
-        for child in coordinator.data.children:
-            if child.id in known_child_ids:
-                continue
-            known_child_ids.add(child.id)
-            new_entities.extend(
-                PiggyTaskChildSensor(coordinator, entry, child.id, description)
-                for description in SENSOR_DESCRIPTIONS
-            )
-        if new_entities:
-            async_add_entities(new_entities)
-
-    _add_new_children()
-    entry.async_on_unload(coordinator.async_add_listener(_add_new_children))
+    add_new_children = child_entity_adder(
+        coordinator,
+        lambda child_id: [
+            PiggyTaskChildSensor(coordinator, entry, child_id, description)
+            for description in SENSOR_DESCRIPTIONS
+        ],
+        async_add_entities,
+    )
+    add_new_children()
+    entry.async_on_unload(coordinator.async_add_listener(add_new_children))
 
 
 class PiggyTaskChildSensor(CoordinatorEntity[PiggyTaskCoordinator], SensorEntity):

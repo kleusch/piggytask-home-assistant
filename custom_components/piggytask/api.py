@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from typing import Any
 
 import aiohttp
 
@@ -53,31 +54,55 @@ class TaskItem:
 
 
 class PiggyTaskApiClient:
-    """Wraps GET /api/integrations/home-assistant/task-counts."""
+    """Async client for the PiggyTask Home Assistant / LLM task endpoints."""
 
     def __init__(self, session: aiohttp.ClientSession, base_url: str, api_token: str) -> None:
         self._session = session
         self._base_url = base_url.rstrip("/")
         self._api_token = api_token
 
-    async def async_get_task_counts(self) -> TaskCountsResult:
-        """Fetch and parse the current task counts for the token's family."""
-        url = f"{self._base_url}{TASK_COUNTS_PATH}"
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        auth_error_message: str,
+        params: dict[str, str] | None = None,
+        json_body: dict[str, str] | None = None,
+        ok_statuses: tuple[int, ...] = (200,),
+    ) -> Any | None:
+        """Shared request/error handling.
+
+        Returns the parsed JSON body for a 200 response, or None for any other
+        status in ok_statuses (e.g. 409 "already completed", which has no body).
+        """
+        url = f"{self._base_url}{path}"
         try:
-            async with self._session.get(
+            async with self._session.request(
+                method,
                 url,
                 headers={"x-api-key": self._api_token},
+                params=params,
+                json=json_body,
                 timeout=aiohttp.ClientTimeout(total=15),
             ) as response:
                 if response.status in (401, 403):
-                    raise PiggyTaskAuthError("Invalid or revoked API token")
-                if response.status != 200:
+                    raise PiggyTaskAuthError(auth_error_message)
+                if response.status not in ok_statuses:
                     raise PiggyTaskConnectionError(
                         f"Unexpected response {response.status} from PiggyTask"
                     )
-                payload = await response.json()
+                if response.status != 200:
+                    return None
+                return await response.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise PiggyTaskConnectionError(str(err)) from err
+
+    async def async_get_task_counts(self) -> TaskCountsResult:
+        """Fetch and parse the current task counts for the token's family."""
+        payload = await self._request(
+            "GET", TASK_COUNTS_PATH, auth_error_message="Invalid or revoked API token"
+        )
 
         family = payload.get("family") or {}
         children = [
@@ -98,23 +123,12 @@ class PiggyTaskApiClient:
 
     async def async_get_tasks(self) -> list[TaskItem]:
         """Fetch open (needs_action) tasks. Requires family:read + tasks:read scope."""
-        url = f"{self._base_url}{TASKS_PATH}"
-        try:
-            async with self._session.get(
-                url,
-                headers={"x-api-key": self._api_token},
-                params={"status": "needs_action"},
-                timeout=aiohttp.ClientTimeout(total=15),
-            ) as response:
-                if response.status in (401, 403):
-                    raise PiggyTaskAuthError("Token lacks task read access")
-                if response.status != 200:
-                    raise PiggyTaskConnectionError(
-                        f"Unexpected response {response.status} from PiggyTask"
-                    )
-                payload = await response.json()
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            raise PiggyTaskConnectionError(str(err)) from err
+        payload = await self._request(
+            "GET",
+            TASKS_PATH,
+            auth_error_message="Token lacks task read access",
+            params={"status": "needs_action"},
+        )
 
         return [
             TaskItem(
@@ -127,22 +141,11 @@ class PiggyTaskApiClient:
         ]
 
     async def async_complete_task(self, task_id: str, child_id: str) -> None:
-        """Mark a task done. Requires tasks:complete scope."""
-        url = f"{self._base_url}{TASKS_COMPLETE_PATH}"
-        try:
-            async with self._session.post(
-                url,
-                headers={"x-api-key": self._api_token},
-                json={"taskId": task_id, "childId": child_id},
-                timeout=aiohttp.ClientTimeout(total=15),
-            ) as response:
-                if response.status in (401, 403):
-                    raise PiggyTaskAuthError("Token lacks tasks:complete scope")
-                if response.status == 409:
-                    return  # already completed elsewhere — nothing left to do
-                if response.status != 200:
-                    raise PiggyTaskConnectionError(
-                        f"Unexpected response {response.status} from PiggyTask"
-                    )
-        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-            raise PiggyTaskConnectionError(str(err)) from err
+        """Mark a task done. Requires tasks:complete scope. 409 (already done) is not an error."""
+        await self._request(
+            "POST",
+            TASKS_COMPLETE_PATH,
+            auth_error_message="Token lacks tasks:complete scope",
+            json_body={"taskId": task_id, "childId": child_id},
+            ok_statuses=(200, 409),
+        )
