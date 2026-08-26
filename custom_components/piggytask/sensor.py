@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .api import ChildTaskCounts
 from .const import DOMAIN
 from .coordinator import PiggyTaskCoordinator
-from .entity import child_device_info, child_entity_adder
+from .entity import child_device_info, child_entity_adder, family_device_info
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -54,6 +54,22 @@ SENSOR_DESCRIPTIONS: tuple[PiggyTaskSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda child: child.due_today,
     ),
+    PiggyTaskSensorDescription(
+        key="coin_balance",
+        translation_key="coin_balance",
+        icon="mdi:cash-multiple",
+        native_unit_of_measurement="coins",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda child: child.coin_balance,
+    ),
+    PiggyTaskSensorDescription(
+        key="xp_balance",
+        translation_key="xp_balance",
+        icon="mdi:star-four-points-outline",
+        native_unit_of_measurement="xp",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda child: child.xp_balance,
+    ),
 )
 
 
@@ -62,6 +78,8 @@ async def async_setup_entry(
 ) -> None:
     """Set up PiggyTask sensors, adding entities as new children appear."""
     coordinator: PiggyTaskCoordinator = hass.data[DOMAIN][entry.entry_id]["counts"]
+
+    async_add_entities([PiggyTaskFamilyOpenTasksSensor(coordinator, entry)])
 
     add_new_children = child_entity_adder(
         coordinator,
@@ -110,3 +128,25 @@ class PiggyTaskChildSensor(CoordinatorEntity[PiggyTaskCoordinator], SensorEntity
         child = self._child()
         name = child.name if child else self._child_id
         return child_device_info(self._child_id, name)
+
+
+class PiggyTaskFamilyOpenTasksSensor(CoordinatorEntity[PiggyTaskCoordinator], SensorEntity):
+    """Total open tasks across all children — one number for a single automation/alert."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "family_open_tasks"
+    _attr_icon = "mdi:clipboard-list-outline"
+    _attr_native_unit_of_measurement = "tasks"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator: PiggyTaskCoordinator, entry: ConfigEntry) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{entry.entry_id}_family_open_tasks"
+
+    @property
+    def native_value(self) -> int:
+        return sum(child.open_tasks for child in self.coordinator.data.children)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return family_device_info(self.coordinator.data.family_id, self.coordinator.data.family_name)

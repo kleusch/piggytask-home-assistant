@@ -23,7 +23,10 @@
     "sensor": {
       "open_tasks": { "name": "Open tasks" },
       "overdue_tasks": { "name": "Overdue tasks" },
-      "due_today": { "name": "Due today" }
+      "due_today": { "name": "Due today" },
+      "coin_balance": { "name": "Coins" },
+      "xp_balance": { "name": "XP" },
+      "family_open_tasks": { "name": "Open tasks (family total)" }
     },
     "todo": {
       "task_list": { "name": "Tasks" }

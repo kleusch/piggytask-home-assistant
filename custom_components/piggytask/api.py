@@ -25,13 +25,15 @@ class PiggyTaskConnectionError(PiggyTaskApiError):
 
 @dataclass
 class ChildTaskCounts:
-    """Task counts for a single child."""
+    """Task counts and reward balances for a single child."""
 
     id: str
     name: str
     open_tasks: int
     overdue_tasks: int
     due_today: int
+    coin_balance: int
+    xp_balance: int
 
 
 @dataclass
@@ -112,6 +114,8 @@ class PiggyTaskApiClient:
                 open_tasks=int(child.get("openTasks", 0)),
                 overdue_tasks=int(child.get("overdueTasks", 0)),
                 due_today=int(child.get("dueToday", 0)),
+                coin_balance=int(child.get("coinBalance", 0)),
+                xp_balance=int(child.get("xpBalance", 0)),
             )
             for child in payload.get("children", [])
         ]

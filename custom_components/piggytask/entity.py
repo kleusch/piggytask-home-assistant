@@ -27,6 +27,17 @@ def child_device_info(child_id: str, child_name: str) -> DeviceInfo:
     )
 
 
+def family_device_info(family_id: str, family_name: str) -> DeviceInfo:
+    """Build the DeviceInfo for family-level entities (e.g. a total-across-children sensor)."""
+    return DeviceInfo(
+        identifiers={(DOMAIN, family_id)},
+        name=f"PiggyTask – {family_name}",
+        manufacturer="PiggyTask",
+        model="Family",
+        configuration_url="https://app.piggytask.de",
+    )
+
+
 def child_entity_adder(
     counts_coordinator: PiggyTaskCoordinator,
     make_entities: Callable[[str], list[Entity]],
