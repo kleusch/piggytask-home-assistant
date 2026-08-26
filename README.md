@@ -2,6 +2,7 @@
 
 [HACS](https://hacs.xyz/) custom integration for [PiggyTask](https://piggytask.de) (family chores & homework tracking). Config-flow setup — paste an API token, done. Adds five sensors per child (tasks + rewards) plus one family-total sensor, and with a Premium token, a to-do list per child.
 
+File issues/PRs in this repo.
 
 ## What's included
 
