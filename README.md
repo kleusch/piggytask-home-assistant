@@ -6,6 +6,17 @@
 
 File issues/PRs in this repo.
 
+## Contents
+
+- [What's included](#whats-included)
+- [Sensors](#sensors)
+- [To-do list (Premium, optional)](#to-do-list-premium-optional)
+- [Example automations](#example-automations)
+- [Get an API token](#get-an-api-token)
+- [Install](#install)
+- [Limitations / possible extensions](#limitations--possible-extensions)
+- [License](#license)
+
 ## What's included
 
 | File                                          | Purpose                                                        |
