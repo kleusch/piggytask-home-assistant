@@ -16,26 +16,24 @@ if TYPE_CHECKING:
     from .coordinator import PiggyTaskCoordinator
 
 
-def child_device_info(child_id: str, child_name: str) -> DeviceInfo:
-    """Build the DeviceInfo grouping all entities for one child."""
+def _device_info(entity_id: str, name: str, model: str) -> DeviceInfo:
     return DeviceInfo(
-        identifiers={(DOMAIN, child_id)},
-        name=f"PiggyTask – {child_name}",
+        identifiers={(DOMAIN, entity_id)},
+        name=f"PiggyTask – {name}",
         manufacturer="PiggyTask",
-        model="Child",
+        model=model,
         configuration_url="https://app.piggytask.de",
     )
+
+
+def child_device_info(child_id: str, child_name: str) -> DeviceInfo:
+    """Build the DeviceInfo grouping all entities for one child."""
+    return _device_info(child_id, child_name, "Child")
 
 
 def family_device_info(family_id: str, family_name: str) -> DeviceInfo:
     """Build the DeviceInfo for family-level entities (e.g. a total-across-children sensor)."""
-    return DeviceInfo(
-        identifiers={(DOMAIN, family_id)},
-        name=f"PiggyTask – {family_name}",
-        manufacturer="PiggyTask",
-        model="Family",
-        configuration_url="https://app.piggytask.de",
-    )
+    return _device_info(family_id, family_name, "Family")
 
 
 def child_entity_adder(
