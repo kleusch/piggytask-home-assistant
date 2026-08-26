@@ -2,6 +2,8 @@
 
 [HACS](https://hacs.xyz/) custom integration for [PiggyTask](https://piggytask.de) (family chores & homework tracking). Config-flow setup — paste an API token, done. Adds five sensors per child (tasks + rewards) plus one family-total sensor, and with a Premium token, a to-do list per child.
 
+[![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kleusch&repository=piggytask-home-assistant&category=integration)
+
 File issues/PRs in this repo.
 
 ## What's included
@@ -85,7 +87,13 @@ In the PiggyTask app: **Parent settings → Integrations → Home Assistant** �
 
 ### HACS
 
-HACS → Integrations → Custom repositories → add this repo's URL, category "Integration". Then install normally via the integration search, or **Settings → Devices & Services → Add Integration → PiggyTask** and paste the token.
+[![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kleusch&repository=piggytask-home-assistant&category=integration)
+
+Click the button (needs [My Home Assistant](https://www.home-assistant.io/integrations/my/) linked to your instance), or manually: HACS → Integrations → Custom repositories → add this repo's URL, category "Integration". Then install PiggyTask, restart if HACS asks you to, and:
+
+[![Add PiggyTask integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=piggytask)
+
+— or manually **Settings → Devices & Services → Add Integration → PiggyTask** — and paste the token.
 
 ### Manual
 
