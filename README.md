@@ -14,7 +14,6 @@ File issues/PRs in this repo.
 - [Example automations](#example-automations)
 - [Get an API token](#get-an-api-token)
 - [Install](#install)
-- [Limitations / possible extensions](#limitations--possible-extensions)
 - [License](#license)
 
 ## What's included
@@ -100,7 +99,7 @@ In the PiggyTask app: **Parent settings → Integrations → Home Assistant** �
 
 [![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=kleusch&repository=piggytask-home-assistant&category=integration)
 
-Click the button (needs [My Home Assistant](https://www.home-assistant.io/integrations/my/) linked to your instance), or manually: HACS → Integrations → Custom repositories → add this repo's URL, category "Integration". Then install PiggyTask, restart if HACS asks you to, and:
+Click the button (needs [My Home Assistant](https://www.home-assistant.io/integrations/my/) linked to your instance), or manually: HACS → Integrations → Custom repositories → add this repo's URL, category "Integration". Then install PiggyTask, **restart Home Assistant** (Settings → System → Restart — without a restart, Home Assistant doesn't know about the integration yet, and "Add Integration" fails with "This integration does not support configuration via the user interface"), and:
 
 [![Add PiggyTask integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=piggytask)
 
@@ -113,11 +112,6 @@ cp -r custom_components/piggytask <config>/custom_components/piggytask
 ```
 
 Restart Home Assistant → **Settings → Devices & Services → Add Integration → PiggyTask** → paste the API token.
-
-## Limitations / possible extensions
-
-- Tasks can only be completed, not created, assigned, or reopened (HA tokens don't get `tasks:write`/`pool:*` scopes) — deliberately left to the app, Alexa, or MCP.
-- Fixed 5-minute poll interval. No options flow yet — nothing else to configure.
 
 ## License
 
