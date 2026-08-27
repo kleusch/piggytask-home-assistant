@@ -20,6 +20,7 @@ from .api import ChildTaskCounts, TaskCountsResult
 from .const import DOMAIN
 from .coordinator import PiggyTaskCoordinator
 from .entity import child_device_info, child_entity_adder, family_device_info
+from .leveling import level_from_xp
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -76,6 +77,13 @@ SENSOR_DESCRIPTIONS: tuple[PiggyTaskSensorDescription, ...] = (
         native_unit_of_measurement="xp",
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda child: child.xp_balance,
+    ),
+    PiggyTaskSensorDescription(
+        key="level",
+        translation_key="level",
+        icon="mdi:trophy-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda child: level_from_xp(child.xp_balance),
     ),
 )
 
