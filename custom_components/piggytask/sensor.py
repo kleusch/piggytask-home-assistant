@@ -77,6 +77,13 @@ SENSOR_DESCRIPTIONS: tuple[PiggyTaskSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         value_fn=lambda child: child.xp_balance,
     ),
+    PiggyTaskSensorDescription(
+        key="level",
+        translation_key="level",
+        icon="mdi:trophy-outline",
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn=lambda child: child.level,
+    ),
 )
 
 FAMILY_SENSOR_DESCRIPTIONS: tuple[PiggyTaskFamilySensorDescription, ...] = (

@@ -26,6 +26,7 @@
       "due_today": { "name": "Heute fällig" },
       "coin_balance": { "name": "Münzen" },
       "xp_balance": { "name": "XP" },
+      "level": { "name": "Level" },
       "family_open_tasks": { "name": "Offene Aufgaben (Familie gesamt)" }
     },
     "todo": {

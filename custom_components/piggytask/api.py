@@ -9,6 +9,7 @@ from typing import Any
 import aiohttp
 
 from .const import TASK_COUNTS_PATH, TASKS_COMPLETE_PATH, TASKS_PATH
+from .leveling import level_from_xp
 
 
 class PiggyTaskApiError(Exception):
@@ -34,6 +35,7 @@ class ChildTaskCounts:
     due_today: int
     coin_balance: int
     xp_balance: int
+    level: int
 
 
 @dataclass
@@ -107,18 +109,25 @@ class PiggyTaskApiClient:
         )
 
         family = payload.get("family") or {}
-        children = [
-            ChildTaskCounts(
-                id=str(child["id"]),
-                name=str(child.get("name", "")),
-                open_tasks=int(child.get("openTasks", 0)),
-                overdue_tasks=int(child.get("overdueTasks", 0)),
-                due_today=int(child.get("dueToday", 0)),
-                coin_balance=int(child.get("coinBalance", 0)),
-                xp_balance=int(child.get("xpBalance", 0)),
+        children = []
+        for child in payload.get("children", []):
+            xp_balance = int(child.get("xpBalance", 0))
+            # The API computes and returns the level itself (same curve as the app).
+            # Fall back to computing it locally only against an older server that
+            # doesn't send "level" yet, so this keeps working across a rollout.
+            level = int(child["level"]) if child.get("level") is not None else level_from_xp(xp_balance)
+            children.append(
+                ChildTaskCounts(
+                    id=str(child["id"]),
+                    name=str(child.get("name", "")),
+                    open_tasks=int(child.get("openTasks", 0)),
+                    overdue_tasks=int(child.get("overdueTasks", 0)),
+                    due_today=int(child.get("dueToday", 0)),
+                    coin_balance=int(child.get("coinBalance", 0)),
+                    xp_balance=xp_balance,
+                    level=level,
+                )
             )
-            for child in payload.get("children", [])
-        ]
         return TaskCountsResult(
             family_id=str(family.get("id", "")),
             family_name=str(family.get("name") or "PiggyTask"),
