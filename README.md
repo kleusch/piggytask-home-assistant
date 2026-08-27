@@ -24,7 +24,7 @@ File issues/PRs in this repo.
 | `custom_components/piggytask/config_flow.py`  | UI setup: paste an API token, validated immediately            |
 | `custom_components/piggytask/coordinator.py`  | Polls `task-counts` (sensors) and `tasks` (to-do), every 5 min |
 | `custom_components/piggytask/sensor.py`       | Sensors per child, plus one family-total sensor                 |
-| `custom_components/piggytask/leveling.py`     | XP → level conversion, mirroring the app's leveling curve       |
+| `custom_components/piggytask/leveling.py`     | XP → level fallback for older servers that don't send `level` yet |
 | `custom_components/piggytask/todo.py`         | To-do list per child, mark-done only (no create/delete)         |
 | `custom_components/piggytask/entity.py`       | Shared device-info helpers (one device per child + one for the family) |
 | `hacs.json`                                   | HACS repository metadata                                       |
@@ -38,7 +38,7 @@ One device per active child ("PiggyTask – `<name>`"):
 - `sensor.piggytask_<name>_due_today` — due today
 - `sensor.piggytask_<name>_coin_balance` — current coin balance
 - `sensor.piggytask_<name>_xp_balance` — current XP balance
-- `sensor.piggytask_<name>_level` — current level, computed from XP with the same curve as the app (1–99)
+- `sensor.piggytask_<name>_level` — current level (1–99), same curve as the app's level-ups
 
 New children show up as new entities automatically once they're active in the app (no restart needed).
 

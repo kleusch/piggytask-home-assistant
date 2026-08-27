@@ -1,9 +1,10 @@
 """XP → level conversion, mirroring the app's leveling curve.
 
-Ported from `app/types/Level.ts` in the PiggyTask app (levelFromXp /
-totalXpForLevel). The API only returns a child's total XP, not a
-precomputed level, so this stays a plain, pure function here — if the
-app's curve ever changes, this needs to be updated to match.
+The task-counts API computes and returns the level itself (see
+`#shared/xp-level` in the main app, which this was ported from). This
+module is only a fallback for api.py to use against an older server
+that doesn't send "level" yet, so upgrading the integration ahead of a
+backend rollout doesn't break the sensor.
 """
 
 from __future__ import annotations
