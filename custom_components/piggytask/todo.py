@@ -1,7 +1,8 @@
 """Todo platform for PiggyTask — one to-do list per child, mark-as-done only.
 
 Only set up when the configured token has task read/complete scope (see
-__init__.py's initial tasks fetch) — a counts-only token never gets here.
+__init__.py: the first poll's `tasks` is None otherwise) — a counts-only token
+never gets here.
 """
 
 from __future__ import annotations
@@ -22,7 +23,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import PiggyTaskCoordinator, PiggyTaskTasksCoordinator
+from .coordinator import PiggyTaskCoordinator
 from .entity import child_device_info, child_entity_adder
 
 
@@ -30,22 +31,18 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up one to-do list entity per active child."""
-    data = hass.data[DOMAIN][entry.entry_id]
-    counts_coordinator: PiggyTaskCoordinator = data["counts"]
-    tasks_coordinator: PiggyTaskTasksCoordinator = data["tasks"]
+    coordinator: PiggyTaskCoordinator = hass.data[DOMAIN][entry.entry_id]["counts"]
 
     add_new_children = child_entity_adder(
-        counts_coordinator,
-        lambda child_id: [
-            PiggyTaskChildTodoList(tasks_coordinator, counts_coordinator, entry, child_id)
-        ],
+        coordinator,
+        lambda child_id: [PiggyTaskChildTodoList(coordinator, entry, child_id)],
         async_add_entities,
     )
     add_new_children()
-    entry.async_on_unload(counts_coordinator.async_add_listener(add_new_children))
+    entry.async_on_unload(coordinator.async_add_listener(add_new_children))
 
 
-class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskTasksCoordinator], TodoListEntity):
+class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskCoordinator], TodoListEntity):
     """Open tasks for one child, as a Home Assistant to-do list."""
 
     _attr_has_entity_name = True
@@ -54,19 +51,17 @@ class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskTasksCoordinator], TodoL
 
     def __init__(
         self,
-        tasks_coordinator: PiggyTaskTasksCoordinator,
-        counts_coordinator: PiggyTaskCoordinator,
+        coordinator: PiggyTaskCoordinator,
         entry: ConfigEntry,
         child_id: str,
     ) -> None:
-        super().__init__(tasks_coordinator)
-        self._counts_coordinator = counts_coordinator
+        super().__init__(coordinator)
         self._child_id = child_id
         self._attr_unique_id = f"{entry.entry_id}_{child_id}_todo"
 
     def _child(self):
         return next(
-            (c for c in self._counts_coordinator.data.children if c.id == self._child_id), None
+            (c for c in self.coordinator.data.children if c.id == self._child_id), None
         )
 
     def _child_name(self) -> str:
@@ -75,12 +70,17 @@ class PiggyTaskChildTodoList(CoordinatorEntity[PiggyTaskTasksCoordinator], TodoL
 
     @property
     def available(self) -> bool:
-        return super().available and self._child() is not None
+        # tasks turns None if the token loses task access (e.g. Premium ended).
+        return (
+            super().available
+            and self.coordinator.data.tasks is not None
+            and self._child() is not None
+        )
 
     @property
     def todo_items(self) -> list[TodoItem]:
         items: list[TodoItem] = []
-        for task in self.coordinator.data:
+        for task in self.coordinator.data.tasks or []:
             if task.child_id != self._child_id:
                 continue
             due = date.fromisoformat(task.due[:10]) if task.due else None

@@ -19,6 +19,17 @@
       "already_configured": "This family is already connected"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling",
+        "description": "How often Home Assistant asks PiggyTask for new counts and tasks. Checking off a task from Home Assistant always refreshes immediately.",
+        "data": {
+          "scan_interval_minutes": "Update interval (minutes)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "open_tasks": { "name": "Open tasks" },

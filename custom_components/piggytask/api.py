@@ -39,15 +39,6 @@ class ChildTaskCounts:
 
 
 @dataclass
-class TaskCountsResult:
-    """Response of the task-counts endpoint."""
-
-    family_id: str
-    family_name: str
-    children: list[ChildTaskCounts] = field(default_factory=list)
-
-
-@dataclass
 class TaskItem:
     """A single open (needs_action) task."""
 
@@ -55,6 +46,29 @@ class TaskItem:
     child_id: str
     summary: str
     due: str | None
+
+
+@dataclass
+class TaskCountsResult:
+    """Response of the task-counts endpoint."""
+
+    family_id: str
+    family_name: str
+    children: list[ChildTaskCounts] = field(default_factory=list)
+    # None = this token can't list tasks (counts-only scope or no Premium).
+    tasks: list[TaskItem] | None = None
+
+
+def _parse_tasks(raw: list[dict[str, Any]]) -> list[TaskItem]:
+    return [
+        TaskItem(
+            id=str(task["id"]),
+            child_id=str(task["childId"]),
+            summary=str(task.get("summary", "")),
+            due=task.get("due"),
+        )
+        for task in raw
+    ]
 
 
 class PiggyTaskApiClient:
@@ -102,10 +116,17 @@ class PiggyTaskApiClient:
         except (aiohttp.ClientError, asyncio.TimeoutError) as err:
             raise PiggyTaskConnectionError(str(err)) from err
 
-    async def async_get_task_counts(self) -> TaskCountsResult:
-        """Fetch and parse the current task counts for the token's family."""
+    async def async_get_task_counts(self, *, include_tasks: bool = False) -> TaskCountsResult:
+        """Fetch and parse the current task counts for the token's family.
+
+        With include_tasks, the open-task list rides along in the same request
+        (`tasks` stays None when the token can't list tasks).
+        """
         payload = await self._request(
-            "GET", TASK_COUNTS_PATH, auth_error_message="Invalid or revoked API token"
+            "GET",
+            TASK_COUNTS_PATH,
+            auth_error_message="Invalid or revoked API token",
+            params={"include": "tasks"} if include_tasks else None,
         )
 
         family = payload.get("family") or {}
@@ -128,10 +149,22 @@ class PiggyTaskApiClient:
                     level=level,
                 )
             )
+        tasks: list[TaskItem] | None = None
+        if include_tasks:
+            if "tasks" in payload:
+                raw_tasks = payload["tasks"]
+                tasks = _parse_tasks(raw_tasks) if raw_tasks is not None else None
+            else:
+                # Older server without `include=tasks`: fall back to the separate call.
+                try:
+                    tasks = await self.async_get_tasks()
+                except PiggyTaskApiError:
+                    tasks = None
         return TaskCountsResult(
             family_id=str(family.get("id", "")),
             family_name=str(family.get("name") or "PiggyTask"),
             children=children,
+            tasks=tasks,
         )
 
     async def async_get_tasks(self) -> list[TaskItem]:
@@ -143,15 +176,7 @@ class PiggyTaskApiClient:
             params={"status": "needs_action"},
         )
 
-        return [
-            TaskItem(
-                id=str(task["id"]),
-                child_id=str(task["childId"]),
-                summary=str(task.get("summary", "")),
-                due=task.get("due"),
-            )
-            for task in payload.get("tasks", [])
-        ]
+        return _parse_tasks(payload.get("tasks", []))
 
     async def async_complete_task(self, task_id: str, child_id: str) -> None:
         """Mark a task done. Requires tasks:complete scope. 409 (already done) is not an error."""
