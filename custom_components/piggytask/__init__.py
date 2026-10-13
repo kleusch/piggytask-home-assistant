@@ -2,50 +2,40 @@
 
 from __future__ import annotations
 
-import asyncio
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .api import PiggyTaskApiError, TaskItem
 from .const import DOMAIN, PLATFORMS, TODO_PLATFORM
-from .coordinator import PiggyTaskCoordinator, PiggyTaskTasksCoordinator
+from .coordinator import PiggyTaskCoordinator
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up PiggyTask from a config entry.
 
     Every token can read task counts (sensors). Whether it can also list/complete
-    tasks depends on the scope chosen when the token was created in PiggyTask. Both
-    are fetched concurrently; a failure to list tasks degrades to counts-only
-    (no todo platform) rather than failing the whole entry — only a counts failure does.
+    tasks depends on the scope chosen when the token was created in PiggyTask (and
+    on Premium); the first poll tells — `tasks` is None for a counts-only token,
+    which then gets no todo platform.
     """
     coordinator = PiggyTaskCoordinator(hass, entry)
-
-    async def _fetch_initial_tasks() -> list[TaskItem] | None:
-        try:
-            return await coordinator.client.async_get_tasks()
-        except PiggyTaskApiError:
-            return None
-
-    _, initial_tasks = await asyncio.gather(
-        coordinator.async_config_entry_first_refresh(), _fetch_initial_tasks()
-    )
+    await coordinator.async_config_entry_first_refresh()
 
     platforms = list(PLATFORMS)
-    tasks_coordinator: PiggyTaskTasksCoordinator | None = None
-    if initial_tasks is not None:
-        tasks_coordinator = PiggyTaskTasksCoordinator(hass, coordinator.client)
-        tasks_coordinator.async_set_updated_data(initial_tasks)
+    if coordinator.data.tasks is not None:
         platforms.append(TODO_PLATFORM)
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {
         "counts": coordinator,
-        "tasks": tasks_coordinator,
         "platforms": platforms,
     }
     await hass.config_entries.async_forward_entry_setups(entry, platforms)
+    entry.async_on_unload(entry.add_update_listener(_async_reload_on_options_change))
     return True
+
+
+async def _async_reload_on_options_change(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Apply a changed polling interval."""
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

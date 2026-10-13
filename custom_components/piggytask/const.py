@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
-
 from homeassistant.const import Platform
 
 DOMAIN = "piggytask"
@@ -18,4 +16,9 @@ TASK_COUNTS_PATH = "/api/integrations/home-assistant/task-counts"
 TASKS_PATH = "/api/integrations/llm/tasks"
 TASKS_COMPLETE_PATH = "/api/integrations/llm/tasks/complete"
 
-UPDATE_INTERVAL = timedelta(minutes=5)
+# Every poll costs the PiggyTask backend a token check, a rate-limit write and
+# three queries — 15 minutes is plenty for chore counters. Completing a task from
+# Home Assistant refreshes right away regardless.
+CONF_SCAN_INTERVAL = "scan_interval_minutes"
+DEFAULT_SCAN_INTERVAL_MINUTES = 15
+SCAN_INTERVAL_CHOICES_MINUTES = [5, 15, 30, 60]

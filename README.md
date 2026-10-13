@@ -11,6 +11,7 @@ File issues/PRs in this repo.
 - [What's included](#whats-included)
 - [Sensors](#sensors)
 - [To-do list (Premium, optional)](#to-do-list-premium-optional)
+- [Update interval](#update-interval)
 - [Example automations](#example-automations)
 - [Get an API token](#get-an-api-token)
 - [Install](#install)
@@ -22,7 +23,7 @@ File issues/PRs in this repo.
 | ---------------------------------------------- | --------------------------------------------------------------- |
 | `custom_components/piggytask/manifest.json`   | Integration manifest (domain `piggytask`)                     |
 | `custom_components/piggytask/config_flow.py`  | UI setup: paste an API token, validated immediately            |
-| `custom_components/piggytask/coordinator.py`  | Polls `task-counts` (sensors) and `tasks` (to-do), every 5 min |
+| `custom_components/piggytask/coordinator.py`  | Polls `task-counts?include=tasks` (sensors + to-do), default every 15 min |
 | `custom_components/piggytask/sensor.py`       | Sensors per child, plus one family-total sensor                 |
 | `custom_components/piggytask/leveling.py`     | XP → level fallback for older servers that don't send `level` yet |
 | `custom_components/piggytask/todo.py`         | To-do list per child, mark-done only (no create/delete)         |
@@ -51,7 +52,11 @@ automation instead of templating over every child:
 
 If the token you paste has the `tasks:complete` scope (the "Counters + check off" preset when creating a token in the PiggyTask app, requires Premium), the integration also creates a `todo.piggytask_<name>` entity per child — open tasks as a checkable list. Checking an item off calls PiggyTask's task-complete API (awards coins/XP, same as completing it in the app). No creating, assigning, or reopening tasks from Home Assistant — completion only.
 
-Whether the to-do platform loads is decided automatically at startup (an initial fetch against the tasks API) — counters-only tokens simply get the sensors.
+Whether the to-do platform loads is decided automatically at startup (the first poll returns `tasks: null` for counters-only tokens) — those tokens simply get the sensors. If a token later loses task access (e.g. Premium ends), the to-do lists become unavailable.
+
+## Update interval
+
+Default: every **15 minutes**, one single request for both counters and to-do lists. Change it under **Settings → Devices & Services → PiggyTask → Configure** (5, 15, 30 or 60 minutes). Checking off a task in Home Assistant always refreshes immediately. Every poll costs the PiggyTask backend a token check, a rate-limit write and several queries, so please don't poll more often than you need.
 
 ## Example automations
 

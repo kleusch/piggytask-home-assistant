@@ -19,6 +19,17 @@
       "already_configured": "Diese Familie ist bereits verbunden"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Abfrage",
+        "description": "Wie oft Home Assistant neue Zähler und Aufgaben bei PiggyTask abfragt. Wird eine Aufgabe in Home Assistant abgehakt, wird immer sofort aktualisiert.",
+        "data": {
+          "scan_interval_minutes": "Aktualisierungsintervall (Minuten)"
+        }
+      }
+    }
+  },
   "entity": {
     "sensor": {
       "open_tasks": { "name": "Offene Aufgaben" },
