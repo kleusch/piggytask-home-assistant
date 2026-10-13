@@ -10,14 +10,21 @@ backend rollout doesn't break the sensor.
 from __future__ import annotations
 
 # Below this level, XP needed per level grows linearly (level*2+20). From here
-# on it's held flat at LATE_GAME_XP_PER_LEVEL so pace doesn't keep
-# accelerating deeper into the game.
+# on growth slows to a small flat increment per level (_LATE_GAME_XP_STEP) so
+# pace doesn't keep accelerating deeper into the game.
 _LATE_GAME_LEVEL_CAP = 40
 
-# = totalXpForLevel(_LATE_GAME_LEVEL_CAP) / (_LATE_GAME_LEVEL_CAP - 1), i.e.
-# the average XP/level it took to go from level 1 to the cap, so post-cap
-# leveling keeps the same pace instead of the ever-steeper linear ramp.
-_LATE_GAME_XP_PER_LEVEL = 60
+# = xpToNextLevel(_LATE_GAME_LEVEL_CAP - 1), i.e. the highest requirement the
+# linear ramp reaches right before the cap. Used as the floor for the
+# late-game curve so it never asks for less XP than a lower level already
+# did (a flat, much lower _LATE_GAME_XP_PER_LEVEL used to cause exactly
+# that: e.g. level 45 needing less XP than level 37).
+_LATE_GAME_BASE_XP = (_LATE_GAME_LEVEL_CAP - 1) * 2 + 20
+
+# Small per-level increase applied from the cap onward — much gentler than
+# the pre-cap ramp (+2/level), so leveling stays fast but keeps climbing
+# instead of plateauing (or worse, dropping) once flattened out.
+_LATE_GAME_XP_STEP = 1
 
 _MAX_LEVEL = 99
 
@@ -28,8 +35,11 @@ def _total_xp_for_level(level: int) -> int:
         return 0
     if level <= _LATE_GAME_LEVEL_CAP:
         return (level - 1) * (level + 20)
-    return _total_xp_for_level(_LATE_GAME_LEVEL_CAP) + (level - _LATE_GAME_LEVEL_CAP) * (
-        _LATE_GAME_XP_PER_LEVEL
+    n = level - _LATE_GAME_LEVEL_CAP
+    return (
+        _total_xp_for_level(_LATE_GAME_LEVEL_CAP)
+        + _LATE_GAME_BASE_XP * n
+        + (_LATE_GAME_XP_STEP * n * (n + 1)) // 2
     )
 
 
